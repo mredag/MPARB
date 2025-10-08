@@ -1,397 +1,227 @@
 # Multi-Platform Auto Response System
 
-A production-ready automated customer service system that handles Instagram DMs, WhatsApp messages, and Google Reviews using n8n orchestration, OpenAI for intelligent responses, and PostgreSQL for comprehensive logging.
+Welcome! This guide is written for people who are brand new to technical projects. If you can follow recipes or assemble furniture, you can bring this system to life. Take it one step at a time and keep this page open while you work.
 
-## Features
+---
 
-- **Multi-Platform Support**: Instagram DMs, WhatsApp Cloud API, Google Business Profile Reviews
-- **AI-Powered Responses**: OpenAI integration for sentiment analysis and contextual replies
-- **Turkish-First**: Default Turkish responses with proper diacritics and polite tone
-- **Policy Compliance**: Respects Meta's 24-hour messaging policy
-- **Comprehensive Logging**: PostgreSQL database with correlation tracking
-- **Error Handling**: Centralized error management with Slack alerts
-- **One-Command Deployment**: Complete system setup with Docker Compose
+## 1. What you are setting up
 
-## Quick Start
+This project listens to customer messages on **Instagram**, **WhatsApp**, and **Google Reviews**. It uses:
 
-### Prerequisites
+* **n8n** – a visual automation tool that runs the workflows.
+* **OpenAI** – writes polite, Turkish-first replies based on the incoming message.
+* **PostgreSQL** – stores every message and response so you can review what happened later.
 
-- Docker and Docker Compose installed
-- API keys for OpenAI, Meta platforms, and Google Business Profile
-- Slack webhook URL (optional, for alerts)
+Once everything is running, new messages trigger an automated conversation flow:
 
-### Installation
+1. A message arrives from Instagram/WhatsApp or a Google review.
+2. The intake workflow cleans and standardises the data.
+3. An AI-powered processor drafts the best reply.
+4. A sender workflow responds on the same platform.
+5. Logs and any errors are written to the database, and Slack can ping you if something goes wrong.
 
-1. **Clone and configure environment**:
+Think of it as a polite, always-on assistant for your customer channels.
+
+---
+
+## 2. Before you touch the keyboard
+
+You will need a few things prepared. Do not worry—we explain the jargon as we go.
+
+### 2.1 Tools to install
+
+| Tool | Why you need it | How to get it |
+| --- | --- | --- |
+| **Git** | Downloads this project. | [Git download page](https://git-scm.com/downloads)
+| **Docker Desktop** (includes Docker Compose) | Runs n8n and PostgreSQL in ready-made containers. | [Docker Desktop download](https://www.docker.com/products/docker-desktop/)
+| **A text editor** | Edits the `.env` settings file. | Examples: [VS Code](https://code.visualstudio.com/), Notepad, TextEdit.
+
+> **Tip:** After installing Docker Desktop, open it once so it can finish its setup. Leave it running while you use this project.
+
+### 2.2 Accounts and keys
+
+You must already have the following API keys or tokens. If you do not, ask the person who manages the platform access.
+
+| Purpose | Variable name | Where it comes from |
+| --- | --- | --- |
+| Encrypt credentials stored by n8n | `N8N_ENCRYPTION_KEY` | You create this yourself. Run `openssl rand -hex 16` in a terminal or use any strong 32-character random string. |
+| Talk to OpenAI | `OPENAI_API_KEY` | OpenAI dashboard. |
+| Send Instagram replies | `FB_PAGE_TOKEN` | Meta/Facebook developer console for your Instagram-connected page. |
+| Send WhatsApp replies | `WA_PERMANENT_TOKEN` | WhatsApp Business Cloud console. |
+| Identify your WhatsApp number | `WA_PHONE_NUMBER_ID` | WhatsApp Business Cloud console. |
+| Confirm Meta webhooks | `META_VERIFY_TOKEN` | Any secret phrase you choose; enter the same value in the Meta developer console. |
+| Read and reply to Google reviews (optional) | `GOOGLE_SERVICE_ACCOUNT_KEY` (base64), `GOOGLE_LOCATION_ID` | Google Cloud service account + Business Profile. |
+| Receive error alerts in Slack (optional) | `SLACK_WEBHOOK_URL` | Slack app configuration. |
+| Branding info for messages | `BRAND_NAME`, `BUSINESS_PHONE`, `BOOKING_LINK` | Your company details. |
+
+Keep these values handy—you will paste them into a configuration file in a moment.
+
+---
+
+## 3. Get the project files
+
+1. Open **Terminal** (macOS/Linux) or **Command Prompt / PowerShell** (Windows).
+2. Pick a folder where you want the project to live.
+3. Run:
+
    ```bash
    git clone <repository-url>
-   cd multi-platform-auto-response
+   cd MPARB
+   ```
+
+   Replace `<repository-url>` with the actual Git address you were given. After this command, you are inside the project folder.
+
+> **No Git?** Download the project as a ZIP file instead, unzip it, and open the folder in your terminal.
+
+---
+
+## 4. Create your `.env` settings file
+
+The `.env` file is a private note that feeds secrets into the system. The project ships with a `.env.example` template.
+
+1. Copy the template:
+
+   ```bash
    cp .env.example .env
    ```
 
-2. **Edit `.env` file** with your API keys and configuration:
-   ```bash
-   # Required: Update these values
-   N8N_ENCRYPTION_KEY=your_32_character_encryption_key_here
-   OPENAI_API_KEY=your_openai_api_key_here
-   FB_PAGE_TOKEN=your_facebook_page_access_token_here
-   WA_PERMANENT_TOKEN=your_whatsapp_permanent_token_here
-   META_VERIFY_TOKEN=your_meta_webhook_verify_token_here
-   
-   # Optional: For Google Reviews
-   GOOGLE_SERVICE_ACCOUNT_KEY=path_to_your_service_account_json_file
-   GOOGLE_LOCATION_ID=your_google_business_location_id
-   
-   # Optional: For Slack alerts
-   SLACK_WEBHOOK_URL=your_slack_webhook_url_for_alerts
+2. Open `.env` in your text editor. Every line looks like `NAME=value`.
+3. Replace the placeholder values with your real keys from section 2.2. Do not use quotes—just paste the value after the `=` sign.
+
+   Example snippet:
+
+   ```ini
+   N8N_ENCRYPTION_KEY=32_character_random_string
+   OPENAI_API_KEY=sk-your-openai-key
+   FB_PAGE_TOKEN=your-facebook-page-token
+   WA_PERMANENT_TOKEN=your-whatsapp-token
+   WA_PHONE_NUMBER_ID=1234567890123456
+   META_VERIFY_TOKEN=a_secret_phrase_you_choose
    ```
 
-   > **Heads-up**: Legacy `FB_VERIFY_TOKEN` and `WA_VERIFY_TOKEN` entries are deprecated and ignored—configure only `META_VERIFY_TOKEN` for Meta webhook verification.
+4. Save the file.
 
-3. **Start the system**:
+> **Safety check:** Never share your `.env` file publicly. It contains real credentials.
+
+For a full explanation of every option, see [`docs/ENV_VARS.md`](docs/ENV_VARS.md).
+
+---
+
+## 5. Start everything up
+
+All commands below are run from the project folder in your terminal.
+
+1. **Launch the core services** (database + n8n):
+
    ```bash
-   make up && make import && make activate
+   make up
    ```
 
-4. **Access n8n interface**:
-   - Open http://localhost:5678 in your browser
-   - Create admin account on first visit
-   - All workflows will be imported and activated automatically
+   The first run may take several minutes while Docker downloads images. Wait until you see messages that the services are running.
 
-## Webhook URLs
+2. **Import the automation workflows**:
 
-After starting the system, configure these webhook URLs in your platform settings:
-
-### Instagram Webhooks
-- **URL**: `https://your-n8n-instance.com/webhook/instagram-intake`
-- **Verify Token**: Use `META_VERIFY_TOKEN` from your .env file
-- **Events**: `messages`, `messaging_postbacks`
-- **Configure in**: Meta Developer Console > Instagram > Webhooks
-
-### WhatsApp Webhooks  
-- **URL**: `https://your-n8n-instance.com/webhook/whatsapp-intake`
-- **Verify Token**: Use `META_VERIFY_TOKEN` from your .env file
-- **Events**: `messages`
-- **Configure in**: Meta Developer Console > WhatsApp > Webhooks
-
-### Google Business Profile
-- **Method**: Uses scheduled polling (5-minute intervals)
-- **No webhook URL configuration needed**
-- **Configure**: Google Business Profile API credentials in n8n
-
-### Internal Webhook URLs (for reference)
-- **Processor**: `https://your-n8n-instance.com/webhook/processor`
-- **Instagram Sender**: `https://your-n8n-instance.com/webhook/sender-instagram`
-- **WhatsApp Sender**: `https://your-n8n-instance.com/webhook/sender-whatsapp`
-- **Google Business Profile Sender**: `https://your-n8n-instance.com/webhook/sender-gbp`
-
-> **Note**: Replace `your-n8n-instance.com` with your actual n8n instance URL. For local development, use `http://localhost:5678`.
-
-## Available Commands
-
-```bash
-make help        # Show all available commands
-make up          # Start all services (PostgreSQL and n8n)
-make down        # Stop all services
-make import      # Import all n8n workflows
-make activate    # Activate all imported workflows
-make logs        # Show logs from all services
-make psql        # Connect to PostgreSQL database
-make backup      # Backup database and workflows
-make test        # Run test suite
-make clean       # Clean up containers and volumes
-```
-
-## System Architecture
-
-```
-External Platforms → Intake Workflows → Central Processor → Sender Workflows → External Platforms
-                                    ↓
-                              PostgreSQL Logging
-                                    ↓
-                              Error Handler → Slack Alerts
-```
-
-### Workflow Overview
-
-1. **Intake Workflows**: Platform-specific webhooks that normalize incoming data
-2. **Central Processor**: AI-powered analysis using OpenAI for sentiment and response generation
-3. **Sender Workflows**: Platform-specific API calls to send responses
-4. **Error Handler**: Centralized error logging and Slack notifications
-
-## Configuration
-
-### Environment Variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `N8N_ENCRYPTION_KEY` | Yes | 32-character encryption key for n8n |
-| `OPENAI_API_KEY` | Yes | OpenAI API key for AI processing |
-| `FB_PAGE_TOKEN` | Yes | Facebook Page Access Token |
-| `WA_PERMANENT_TOKEN` | Yes | WhatsApp Business Cloud API Token |
-| `META_VERIFY_TOKEN` | Yes | Webhook verification token |
-| `GOOGLE_SERVICE_ACCOUNT_KEY` | No | Path to Google service account JSON |
-| `SLACK_WEBHOOK_URL` | No | Slack webhook for error alerts |
-
-### Database Schema
-
-The system automatically creates three main tables:
-
-- **messages**: Logs all incoming messages and responses
-- **reviews**: Logs Google Business Profile reviews and responses  
-- **errors**: Centralized error logging with correlation tracking
-
-## Platform-Specific Behavior
-
-### Instagram DMs
-- **24-Hour Policy**: Only responds to messages within 24 hours
-- **Outside Policy**: Sends Slack alert, no auto-response
-- **Response Type**: Free-form text messages
-
-### WhatsApp Messages
-- **Within 24 Hours**: Free-form text responses
-- **Outside 24 Hours**: Pre-approved message templates only
-- **Session Tracking**: Automatic session age calculation
-
-### Google Reviews
-- **4-5 Stars**: Automatic positive response
-- **3 Stars**: Log only, no response
-- **1-2 Stars**: Slack alert with AI-generated draft, no auto-response
-
-## Monitoring and Logging
-
-### Database Logging
-All interactions are logged with:
-- Platform identification
-- Sentiment analysis results
-- Response times and outcomes
-- Correlation IDs for end-to-end tracking
-
-### Error Handling
-- Automatic retry logic (3 attempts with exponential backoff)
-- Centralized error logging to PostgreSQL
-- Slack alerts for critical failures
-- Correlation ID tracking for debugging
-
-### Performance Monitoring
-- Target: 10 concurrent messages
-- Response time: <10 seconds median end-to-end
-- Database performance tracking
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Services won't start**:
    ```bash
-   # Check if .env file exists and is configured
-   ls -la .env
-   # Check Docker Compose logs
-   make logs
-   ```
-
-2. **Webhooks not receiving data**:
-   - Verify webhook URLs are publicly accessible
-   - Check verify tokens match platform configuration
-   - Review n8n workflow execution logs
-
-3. **Database connection issues**:
-   ```bash
-   # Test database connection
-   make psql
-   # Check PostgreSQL logs
-   docker-compose logs postgres
-   ```
-
-4. **Workflows not importing**:
-   ```bash
-   # Re-run import process
    make import
-   # Check n8n logs
-   docker-compose logs n8n
    ```
 
-### Logs and Debugging
+3. **Activate the workflows** so they react to new messages:
+
+   ```bash
+   make activate
+   ```
+
+If anything fails, read the terminal output. Docker must be running, and your `.env` file must be correct.
+
+---
+
+## 6. Meet your control panel (n8n)
+
+1. Open a browser and visit **http://localhost:5678**.
+2. If this is the first time, create an admin account when prompted.
+3. Go to **Workflows → Active** to confirm that Instagram, WhatsApp, Google, Processor, Sender, and Error Handler workflows are active.
+4. Explore the **Executions** tab to see every message that runs through the system.
+
+> Working remotely? Replace `localhost` with the public address of your server. Make sure ports are open or use a tunnel service such as Cloudflare Tunnel or Ngrok.
+
+---
+
+## 7. Connect your external platforms
+
+Follow the official platform guides and use these values during setup:
+
+### Instagram
+
+* **Webhook URL**: `https://<your-domain>/webhook/instagram-intake`
+* **Verify Token**: the same `META_VERIFY_TOKEN` you put in `.env`.
+* **Events to subscribe to**: `messages`, `messaging_postbacks`.
+
+### WhatsApp Cloud API
+
+* **Webhook URL**: `https://<your-domain>/webhook/whatsapp-intake`
+* **Verify Token**: `META_VERIFY_TOKEN`.
+* **Events**: `messages`.
+
+### Google Business Profile (optional)
+
+* No webhook needed. The system polls for new reviews every five minutes using your Google credentials.
+
+> Replace `<your-domain>` with the real hostname of your n8n instance. If you are testing locally, use `http://localhost:5678` when a service allows it.
+
+---
+
+## 8. Daily use
+
+* **Check activity**: Visit the n8n dashboard → *Executions*.
+* **Pause everything**: Run `make down` to stop the containers.
+* **Bring it back**: Run `make up` again (workflows stay imported).
+* **View live logs**: `make logs` shows what is happening in real time.
+* **Backups**: `make backup` saves the database and workflow files into `backups/`.
+
+---
+
+## 9. Troubleshooting basics
+
+| Problem | What to try |
+| --- | --- |
+| Docker command fails with “command not found” | Install Docker Desktop or restart it so the `docker` command becomes available. |
+| `make up` stops with an error about `.env` | Open `.env` and check for typos or missing values. Every required variable must have a value. |
+| n8n page does not load | Ensure `make up` is still running and Docker Desktop shows both containers (`n8n`, `postgres`). |
+| Workflows show as inactive | Run `make import` and then `make activate` again. |
+| Messages are not sent | Check the **Executions** tab for errors. Confirm your API tokens are still valid and the webhook URLs match exactly. |
+| Need detailed environment variable help | Read [`docs/ENV_VARS.md`](docs/ENV_VARS.md). |
+
+If you are stuck, collect screenshots or error messages and share them with your technical support contact.
+
+---
+
+## 10. Want to explore further?
+
+Ready to go beyond the basics? These documents dive deeper:
+
+* [`docs/AGENTS.md`](docs/AGENTS.md) – Complete developer/agent handbook.
+* [`docs/INTEGRATION_SUMMARY.md`](docs/INTEGRATION_SUMMARY.md) – Detailed description of every workflow.
+* [`docs/PRD.md`](docs/PRD.md) – Product requirements and use cases.
+
+Developers can run automated checks with:
 
 ```bash
-# View all service logs
-make logs
-
-# Connect to database for debugging
-make psql
-
-# Check specific workflow execution in n8n UI
-# Navigate to http://localhost:5678 → Executions
-```
-
-## Development
-
-### For Developers and AI Agents
-
-This project includes comprehensive development standards and guidelines:
-
-- **[Developer Guide](docs/AGENTS.md)** - Complete guide for developers and AI agents
-- **[Integration Summary](docs/INTEGRATION_SUMMARY.md)** - System integration details
-- **[Environment Variables](docs/ENV_VARS.md)** - Complete environment configuration
-- **[Product Requirements](docs/PRD.md)** - Business logic and requirements
-
-### Development Standards (Steering Files)
-
-The `.kiro/steering/` directory contains development standards that are automatically applied:
-
-- **[Project Overview](.kiro/steering/project-overview.md)** - System architecture and principles
-- **[Workflow Standards](.kiro/steering/workflow-standards.md)** - Workflow development requirements
-- **[Turkish Language Standards](.kiro/steering/turkish-language-standards.md)** - Language compliance rules
-- **[Database Standards](.kiro/steering/database-standards.md)** - Database design and performance
-- **[API Integration Standards](.kiro/steering/api-integration-standards.md)** - API integration best practices
-- **[Testing Standards](.kiro/steering/testing-standards.md)** - Comprehensive testing requirements
-
-### Quick Development Tasks
-
-#### Adding New Templates
-Edit `templates/templates.json` to add new response templates:
-
-```json
-{
-  "platform": {
-    "language_code": {
-      "template_type": "Response text with {variables}"
-    }
-  }
-}
-```
-
-#### Modifying Workflows
-1. Edit JSON files in `workflows/` directory
-2. Run `make import` to update n8n
-3. Activate workflows with `make activate`
-4. Validate changes: `node scripts/validate_integration.js`
-
-#### Testing and Validation
-```bash
-# Validate system integration
+make test
 node scripts/validate_integration.js
-
-# Run end-to-end tests
-node scripts/test_end_to_end.js
-
-# Run platform-specific tests
-npm test
-npm run test:instagram
-npm run test:whatsapp
-npm run test:google
-
-# Final integration check
-node scripts/final_integration_check.js
 ```
 
-### Development Workflow
+---
 
-1. **Setup Development Environment**:
-   ```bash
-   make up && make import && make activate
-   ```
+## 11. Glossary (speak the lingo)
 
-2. **Make Changes** following the steering standards
+* **API key** – A password that lets software talk to another service.
+* **Docker container** – A boxed-up mini-computer that runs one piece of the system.
+* **n8n** – A drag-and-drop automation tool that runs all workflows.
+* **Webhook** – A URL that receives messages when something happens (e.g., a new DM).
+* **Workflow** – A sequence of steps (nodes) that describe what to do with each message.
 
-3. **Validate Changes**:
-   ```bash
-   node scripts/validate_integration.js
-   ```
+---
 
-4. **Test Changes**:
-   ```bash
-   npm test
-   node scripts/test_end_to_end.js
-   ```
+## 12. License
 
-5. **Deploy Changes**:
-   ```bash
-   make import && make activate
-   ```
-
-## Security Considerations
-
-- All API keys stored in environment variables only
-- No secrets embedded in workflow JSON files
-- n8n credentials system for secure storage
-- PostgreSQL with proper user permissions
-- Webhook verify tokens for platform security
-
-## Documentation
-
-### Complete Documentation Suite
-
-- **[README.md](README.md)** - This file, system overview and quick start
-- **[Developer Guide](docs/AGENTS.md)** - Comprehensive guide for developers and AI agents
-- **[Integration Summary](docs/INTEGRATION_SUMMARY.md)** - Complete system integration details
-- **[Product Requirements](docs/PRD.md)** - Business logic and feature requirements
-- **[Environment Variables](docs/ENV_VARS.md)** - Complete environment configuration reference
-
-### Development Standards
-
-- **[Project Overview](.kiro/steering/project-overview.md)** - System architecture and design principles
-- **[Workflow Standards](.kiro/steering/workflow-standards.md)** - Workflow development requirements
-- **[Turkish Language Standards](.kiro/steering/turkish-language-standards.md)** - Language compliance and quality
-- **[Database Standards](.kiro/steering/database-standards.md)** - Database design and performance guidelines
-- **[API Integration Standards](.kiro/steering/api-integration-standards.md)** - API integration best practices
-- **[Testing Standards](.kiro/steering/testing-standards.md)** - Comprehensive testing requirements
-
-### Validation and Testing Scripts
-
-- **[Integration Validation](scripts/validate_integration.js)** - Complete system validation
-- **[End-to-End Testing](scripts/test_end_to_end.js)** - Full system testing
-- **[Final Integration Check](scripts/final_integration_check.js)** - Deployment readiness verification
-
-## Support
-
-### Getting Help
-
-1. **Start with Documentation**:
-   - [Developer Guide](docs/AGENTS.md) for comprehensive information
-   - [Integration Summary](docs/INTEGRATION_SUMMARY.md) for technical details
-   - [Troubleshooting section](#troubleshooting) above
-
-2. **System Diagnostics**:
-   ```bash
-   # Validate system integration
-   node scripts/validate_integration.js
-   
-   # Check system health
-   node scripts/final_integration_check.js
-   
-   # View system logs
-   make logs
-   ```
-
-3. **Debug Specific Issues**:
-   - Review n8n execution logs at http://localhost:5678 → Executions
-   - Check database logs with `make psql`
-   - Use correlation IDs for end-to-end tracing
-
-4. **Development Support**:
-   - Follow [Development Standards](.kiro/steering/) for consistent code quality
-   - Use [Testing Standards](.kiro/steering/testing-standards.md) for validation
-   - Reference [API Integration Standards](.kiro/steering/api-integration-standards.md) for external APIs
-
-## Contributing
-
-### Development Guidelines
-
-1. **Follow Standards**: All development must follow the standards in `.kiro/steering/`
-2. **Test Changes**: Use validation scripts before committing
-3. **Document Updates**: Update relevant documentation for changes
-4. **Correlation Tracking**: Ensure all workflows include correlation_id tracking
-5. **Turkish Compliance**: Follow Turkish language standards for responses
-
-### Quality Assurance
-
-- All changes must pass `node scripts/validate_integration.js`
-- Integration tests must pass with `node scripts/test_end_to_end.js`
-- Follow database standards for schema changes
-- Implement proper error handling and retry logic
-- Include comprehensive logging and monitoring
-
-## License
-
-MIT License - See LICENSE file for details
+MIT License – see [`LICENSE`](LICENSE) for the full text.
