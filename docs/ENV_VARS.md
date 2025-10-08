@@ -7,18 +7,21 @@ This document describes all environment variables required for the Multi-Platfor
 ### Database Configuration
 
 #### `POSTGRES_DB`
+
 - **Description**: PostgreSQL database name
 - **Required**: Yes
 - **Default**: `autoresponse`
 - **Example**: `POSTGRES_DB=autoresponse`
 
 #### `POSTGRES_USER`
+
 - **Description**: PostgreSQL username
 - **Required**: Yes
 - **Default**: `postgres`
 - **Example**: `POSTGRES_USER=postgres`
 
 #### `POSTGRES_PASSWORD`
+
 - **Description**: PostgreSQL password
 - **Required**: Yes
 - **Security**: High - Database access credential
@@ -27,6 +30,7 @@ This document describes all environment variables required for the Multi-Platfor
 ### n8n Configuration
 
 #### `N8N_ENCRYPTION_KEY`
+
 - **Description**: Encryption key for n8n credential storage
 - **Required**: Yes
 - **Security**: Critical - Protects all stored credentials
@@ -37,6 +41,7 @@ This document describes all environment variables required for the Multi-Platfor
 ### OpenAI Integration
 
 #### `OPENAI_API_KEY`
+
 - **Description**: OpenAI API key for GPT-based message processing
 - **Required**: Yes
 - **Security**: High - API access credential
@@ -46,6 +51,7 @@ This document describes all environment variables required for the Multi-Platfor
 ### Meta Platform Integration
 
 #### `FB_PAGE_TOKEN`
+
 - **Description**: Facebook Page Access Token for Instagram messaging
 - **Required**: Yes (for Instagram functionality)
 - **Security**: High - Platform API credential
@@ -53,6 +59,7 @@ This document describes all environment variables required for the Multi-Platfor
 - **Example**: `FB_PAGE_TOKEN=your_facebook_page_token_here`
 
 #### `FB_VERIFY_TOKEN`
+
 - **Description**: Webhook verification token for Facebook/Instagram
 - **Required**: Yes (for Instagram functionality)
 - **Security**: Medium - Webhook validation
@@ -60,6 +67,7 @@ This document describes all environment variables required for the Multi-Platfor
 - **Example**: `FB_VERIFY_TOKEN=your_custom_verify_token`
 
 #### `WA_PERMANENT_TOKEN`
+
 - **Description**: WhatsApp Business Cloud API permanent access token
 - **Required**: Yes (for WhatsApp functionality)
 - **Security**: High - Platform API credential
@@ -67,12 +75,14 @@ This document describes all environment variables required for the Multi-Platfor
 - **Example**: `WA_PERMANENT_TOKEN=your_whatsapp_permanent_token`
 
 #### `WA_PHONE_NUMBER_ID`
+
 - **Description**: WhatsApp Business phone number ID
 - **Required**: Yes (for WhatsApp functionality)
 - **Security**: Low - Public identifier
 - **Example**: `WA_PHONE_NUMBER_ID=1234567890123456`
 
 #### `WA_VERIFY_TOKEN`
+
 - **Description**: Webhook verification token for WhatsApp
 - **Required**: Yes (for WhatsApp functionality)
 - **Security**: Medium - Webhook validation
@@ -82,6 +92,7 @@ This document describes all environment variables required for the Multi-Platfor
 ### Google Business Profile Integration
 
 #### `GOOGLE_SERVICE_ACCOUNT_KEY`
+
 - **Description**: Google Service Account JSON key for Business Profile API
 - **Required**: Yes (for Google Reviews functionality)
 - **Security**: Critical - Service account credential
@@ -89,6 +100,7 @@ This document describes all environment variables required for the Multi-Platfor
 - **Example**: `GOOGLE_SERVICE_ACCOUNT_KEY=eyJ0eXBlIjoi...` (base64 encoded)
 
 #### `GOOGLE_LOCATION_ID`
+
 - **Description**: Google Business Profile location ID
 - **Required**: Yes (for Google Reviews functionality)
 - **Security**: Low - Public identifier
@@ -97,6 +109,7 @@ This document describes all environment variables required for the Multi-Platfor
 ### Monitoring and Alerting
 
 #### `SLACK_WEBHOOK_URL`
+
 - **Description**: Slack webhook URL for error alerts and escalations
 - **Required**: Optional (recommended for production)
 - **Security**: Medium - Notification endpoint
@@ -106,12 +119,14 @@ This document describes all environment variables required for the Multi-Platfor
 ### Business Configuration
 
 #### `BRAND_NAME`
+
 - **Description**: Business/brand name used in response templates
 - **Required**: Yes
 - **Security**: Low - Public information
 - **Example**: `BRAND_NAME=Your Business Name`
 
 #### `BUSINESS_PHONE`
+
 - **Description**: Business phone number for customer contact
 - **Required**: Optional
 - **Security**: Low - Public information
@@ -119,6 +134,7 @@ This document describes all environment variables required for the Multi-Platfor
 - **Example**: `BUSINESS_PHONE=+905551234567`
 
 #### `BOOKING_LINK`
+
 - **Description**: Online booking system URL
 - **Required**: Optional
 - **Security**: Low - Public information
@@ -127,25 +143,33 @@ This document describes all environment variables required for the Multi-Platfor
 ## Environment Variable Security Levels
 
 ### Critical Security Variables
+
 These variables provide access to core system functions and must be kept secure:
+
 - `N8N_ENCRYPTION_KEY`
 - `GOOGLE_SERVICE_ACCOUNT_KEY`
 
 ### High Security Variables
+
 These variables provide API access and should be protected:
+
 - `POSTGRES_PASSWORD`
 - `OPENAI_API_KEY`
 - `FB_PAGE_TOKEN`
 - `WA_PERMANENT_TOKEN`
 
 ### Medium Security Variables
+
 These variables are used for webhook validation:
+
 - `FB_VERIFY_TOKEN`
 - `WA_VERIFY_TOKEN`
 - `SLACK_WEBHOOK_URL`
 
 ### Low Security Variables
+
 These variables contain public or non-sensitive information:
+
 - `POSTGRES_DB`
 - `POSTGRES_USER`
 - `WA_PHONE_NUMBER_ID`
@@ -157,11 +181,13 @@ These variables contain public or non-sensitive information:
 ## Configuration Setup
 
 ### 1. Copy Environment Template
+
 ```bash
 cp .env.example .env
 ```
 
 ### 2. Configure Required Variables
+
 Edit the `.env` file and set all required variables for your deployment:
 
 ```bash
@@ -197,6 +223,7 @@ BOOKING_LINK=https://your-booking-system.com
 ```
 
 ### 3. Validate Configuration
+
 Run the system startup to validate all environment variables are properly configured:
 
 ```bash
@@ -206,24 +233,28 @@ make up
 ## Platform-Specific Setup Instructions
 
 ### Instagram Configuration
+
 1. Create Facebook App and get Page Access Token
 2. Set up webhook endpoint with `FB_VERIFY_TOKEN`
 3. Subscribe to `messages` webhook events
 4. Configure webhook URL: `https://your-domain.com/webhook/instagram-intake`
 
 ### WhatsApp Configuration
+
 1. Set up WhatsApp Business Cloud API
 2. Get permanent access token and phone number ID
 3. Configure webhook with `WA_VERIFY_TOKEN`
 4. Configure webhook URL: `https://your-domain.com/webhook/whatsapp-intake`
 
 ### Google Business Profile Configuration
+
 1. Create Google Cloud Project and enable Business Profile API
 2. Create Service Account and download JSON key
 3. Base64 encode the JSON key for `GOOGLE_SERVICE_ACCOUNT_KEY`
 4. Get your Google Business Profile location ID
 
 ### Slack Configuration (Optional)
+
 1. Create Slack App in your workspace
 2. Enable Incoming Webhooks
 3. Create webhook URL for your desired channel
@@ -232,18 +263,21 @@ make up
 ## Security Best Practices
 
 ### Environment File Security
+
 - Never commit `.env` files to version control
 - Use `.env.example` as a template without real values
 - Restrict file permissions: `chmod 600 .env`
 - Use different credentials for development and production
 
 ### Credential Rotation
+
 - Rotate API keys regularly (quarterly recommended)
 - Update `N8N_ENCRYPTION_KEY` during major updates
 - Monitor API usage for unauthorized access
 - Use separate credentials for different environments
 
 ### Access Control
+
 - Limit database access to application only
 - Use least-privilege principle for all API tokens
 - Monitor webhook endpoint access logs
@@ -254,34 +288,41 @@ make up
 ### Common Issues
 
 #### Missing Environment Variables
+
 **Error**: `Environment variable X is not set`
 **Solution**: Check `.env` file and ensure all required variables are configured
 
 #### Invalid API Credentials
+
 **Error**: `401 Unauthorized` or `403 Forbidden`
 **Solution**: Verify API tokens are valid and have required permissions
 
 #### Database Connection Issues
+
 **Error**: `Connection refused` or `Authentication failed`
 **Solution**: Check PostgreSQL credentials and ensure database is running
 
 #### Webhook Verification Failures
+
 **Error**: `Webhook verification failed`
 **Solution**: Ensure verify tokens match between platform configuration and environment variables
 
 ### Validation Commands
 
 #### Test Database Connection
+
 ```bash
 make psql
 ```
 
 #### Check n8n Status
+
 ```bash
 docker-compose logs n8n
 ```
 
 #### Validate Environment Variables
+
 ```bash
 docker-compose config
 ```

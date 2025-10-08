@@ -5,9 +5,28 @@ fileMatchPattern: 'tests/*.js'
 
 # Testing Standards and Guidelines
 
-## Testing Philosophy
+## CONTEXT FIRST - UNDERSTAND THE TESTING ECOSYSTEM
 
-All code changes must include comprehensive tests that validate:
+Before writing ANY test:
+1. **LIST ALL EXISTING TESTS** and their coverage areas
+2. **IDENTIFY CRITICAL PATHS** (correlation tracking, Turkish language, API flows)
+3. **UNDERSTAND PERFORMANCE TARGETS** (<10 second response, 10 concurrent messages)
+4. **CHECK MOCK DATA PATTERNS** and realistic test scenarios
+5. **VERIFY CI/CD INTEGRATION** and automated validation
+
+## CHALLENGE THE REQUEST - TESTING EDGE CASES
+
+Critical questions for test development:
+- **FAILURE SCENARIOS**: What happens when OpenAI API is down?
+- **BOUNDARY CONDITIONS**: 24-hour policy edge cases, rate limits?
+- **DATA INTEGRITY**: Does correlation_id tracking work under load?
+- **LANGUAGE COMPLIANCE**: Are Turkish diacritics preserved in all scenarios?
+- **PERFORMANCE**: Does the system meet response time targets under stress?
+
+## HOLD THE STANDARD - COMPREHENSIVE TESTING
+
+### Testing Philosophy (NO COMPROMISES)
+**ALL CODE CHANGES MUST INCLUDE** comprehensive tests that validate:
 - Functional correctness
 - Error handling scenarios
 - Performance requirements

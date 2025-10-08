@@ -5,10 +5,28 @@ fileMatchPattern: 'scripts/seed.sql'
 
 # Database Standards and Schema Guidelines
 
-## Core Database Principles
+## CONTEXT FIRST - UNDERSTAND THE DATA ARCHITECTURE
 
-### 1. Correlation ID Tracking
-Every table that logs system interactions must include:
+Before ANY database changes:
+1. **LIST ALL TABLES** and their relationships
+2. **IDENTIFY CORRELATION TRACKING** patterns across tables  
+3. **UNDERSTAND PERFORMANCE REQUIREMENTS** (<10 second response time)
+4. **CHECK EXISTING INDEXES** and query patterns
+5. **VERIFY BACKUP AND MIGRATION** procedures
+
+## CHALLENGE THE REQUEST - DATABASE EDGE CASES
+
+Critical questions for database changes:
+- **DATA INTEGRITY**: How does this affect correlation_id tracking?
+- **PERFORMANCE IMPACT**: Will this slow down critical queries?
+- **MIGRATION SAFETY**: Can this be rolled back if something breaks?
+- **CONCURRENT ACCESS**: How does this handle 10 simultaneous messages?
+- **STORAGE GROWTH**: What's the long-term data retention strategy?
+
+## HOLD THE STANDARD - DATABASE INTEGRITY
+
+### 1. Correlation ID Tracking (ABSOLUTE REQUIREMENT)
+**EVERY TABLE THAT LOGS SYSTEM INTERACTIONS MUST INCLUDE** - No exceptions:
 - `correlation_id UUID NOT NULL` - For end-to-end request tracing
 - Proper indexing on correlation_id for performance
 

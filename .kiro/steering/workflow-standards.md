@@ -5,22 +5,49 @@ fileMatchPattern: 'workflows/*.json'
 
 # Workflow Development Standards
 
-## Required Components for All Workflows
+## CONTEXT FIRST - UNDERSTAND BEFORE CODING
 
-### 1. Correlation ID Tracking
-Every workflow must implement correlation_id tracking:
+Before modifying any workflow:
+1. **LIST ALL WORKFLOW FILES** in the target directory
+2. **IDENTIFY DEPENDENCIES** between workflows (intake → processor → sender)
+3. **UNDERSTAND DATA FLOW** and correlation_id tracking
+4. **CHECK EXISTING PATTERNS** for consistency
+
+## CHALLENGE THE REQUEST - EDGE CASES FIRST
+
+Ask these questions for every workflow change:
+- **INPUTS**: What data format does this workflow expect?
+- **OUTPUTS**: What does the next workflow need?
+- **CONSTRAINTS**: Rate limits, 24-hour policies, API quotas?
+- **EDGE CASES**: Network failures, invalid data, API errors?
+- **CORRELATION**: How is end-to-end tracking maintained?
+
+## HOLD THE STANDARD - EVERY WORKFLOW MUST HAVE
+
+### Non-Negotiable Requirements
+
+### 1. Correlation ID Tracking (MANDATORY)
+**EVERY WORKFLOW MUST IMPLEMENT** correlation_id tracking - NO EXCEPTIONS:
 
 ```javascript
-// Generate correlation_id in intake workflows
+// REQUIRED: Generate correlation_id in intake workflows
 correlation_id: require('crypto').randomUUID()
 
-// Pass correlation_id in HTTP requests
+// REQUIRED: Pass correlation_id in ALL HTTP requests
 headers: {
-  'x-correlation-id': '={{ $json.correlation_id }}'
+  'x-correlation-id': '={{ $json.correlation_id }}',
+  'Content-Type': 'application/json'
 }
 
-// Include in database operations
+// REQUIRED: Include in ALL database operations
 correlation_id: '={{ $json.correlation_id }}'
+
+// REQUIRED: Log correlation_id for debugging
+console.log('Processing message:', {
+  correlation_id: $json.correlation_id,
+  platform: $json.platform,
+  timestamp: new Date().toISOString()
+});
 ```
 
 ### 2. Database Logging
@@ -35,15 +62,36 @@ Required fields:
 - `response_time_ms` (calculated from start time)
 - `outcome` ('sent', 'failed', 'escalated', 'logged_only')
 
-### 3. Error Handling
-Implement comprehensive error handling:
+### 3. Error Handling (BULLETPROOF)
+**THINK THROUGH ALL FAILURE SCENARIOS** before implementing:
 
 ```javascript
-// Retry configuration
+// REQUIRED: Retry configuration for ALL external API calls
 retryOnFail: true,
 maxTries: 3,
-waitBetweenTries: 2000,
-continueOnFail: true
+waitBetweenTries: 2000,  // Exponential backoff
+continueOnFail: true     // Don't break the workflow
+
+// REQUIRED: Comprehensive error logging
+if (apiResponse.error) {
+  console.error('API Error:', {
+    error: apiResponse.error.message,
+    correlation_id: $json.correlation_id,
+    api_endpoint: 'specific_endpoint',
+    retry_attempt: $node.context.retryCount || 0,
+    timestamp: new Date().toISOString()
+  });
+}
+
+// REQUIRED: Fallback responses for critical failures
+const fallbackResponse = {
+  language: 'tr',
+  sentiment: 'Neutral', 
+  intent: 'Other',
+  reply_text: 'Teşekkür ederiz, mesajınızı aldık. En kısa sürede size dönüş yapacağız.',
+  fallback: true,
+  correlation_id: $json.correlation_id
+};
 ```
 
 ### 4. Response Time Tracking

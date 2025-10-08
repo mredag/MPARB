@@ -4,9 +4,29 @@ inclusion: always
 
 # Multi-Platform Auto Response System - Project Overview
 
-## System Architecture
+## CONTEXT FIRST - UNDERSTAND THIS SYSTEM
 
-This is a production-ready automated customer service system that handles Instagram DMs, WhatsApp messages, and Google Business Profile reviews using n8n orchestration, OpenAI for intelligent responses, and PostgreSQL for comprehensive logging.
+Before working on ANY component:
+1. **SYSTEM ARCHITECTURE**: n8n workflows → PostgreSQL logging → External APIs
+2. **CORE DEPENDENCIES**: OpenAI, Meta APIs, Google Business Profile, PostgreSQL, Slack
+3. **KEY PATTERNS**: Correlation ID tracking, Turkish-first responses, 24-hour policy compliance
+4. **PERFORMANCE TARGETS**: <10 second response time, 10 concurrent messages
+5. **CRITICAL PATHS**: Intake → Processor → Sender → Error Handler
+
+## CHALLENGE THE REQUEST - SYSTEM EDGE CASES
+
+Always consider these system-wide edge cases:
+- **Instagram 24-hour policy violations** - No responses outside window
+- **WhatsApp template vs text modes** - Based on session age
+- **OpenAI API failures** - Fallback responses required
+- **Database connection failures** - Graceful degradation needed
+- **Correlation ID tracking breaks** - End-to-end tracing lost
+- **Turkish character encoding issues** - Diacritics corruption
+- **Rate limiting on external APIs** - Instagram (200/hr), WhatsApp (1000/sec)
+
+## HOLD THE STANDARD - SYSTEM ARCHITECTURE
+
+This is a **PRODUCTION-READY** automated customer service system with **ZERO-COMPROMISE** quality standards:
 
 ### Core Components
 

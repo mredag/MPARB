@@ -5,10 +5,28 @@ fileMatchPattern: 'workflows/sender_*.json'
 
 # API Integration Standards
 
-## Core API Integration Principles
+## CONTEXT FIRST - UNDERSTAND THE API ECOSYSTEM
 
-### 1. Retry Logic
-All external API calls must implement retry logic:
+Before integrating ANY external API:
+1. **LIST ALL API DEPENDENCIES** (Meta, OpenAI, Google, Slack)
+2. **IDENTIFY RATE LIMITS** and quotas for each service
+3. **UNDERSTAND AUTHENTICATION** patterns and token management
+4. **CHECK ERROR RESPONSE** formats and retry strategies
+5. **VERIFY WEBHOOK SECURITY** requirements and validation
+
+## CHALLENGE THE REQUEST - API EDGE CASES
+
+Critical questions for API integrations:
+- **RATE LIMITS**: What happens when we hit Instagram's 200/hour limit?
+- **AUTHENTICATION**: How do we handle token expiration and refresh?
+- **NETWORK FAILURES**: What's the retry strategy for timeouts?
+- **DATA VALIDATION**: How do we handle malformed responses?
+- **SECURITY**: Are webhook signatures properly validated?
+
+## HOLD THE STANDARD - API RELIABILITY
+
+### 1. Retry Logic (BULLETPROOF REQUIRED)
+**ALL EXTERNAL API CALLS MUST IMPLEMENT** comprehensive retry logic:
 
 ```javascript
 // Required retry configuration

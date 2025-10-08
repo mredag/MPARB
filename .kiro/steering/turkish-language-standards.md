@@ -5,10 +5,26 @@ fileMatchPattern: 'templates/*.json'
 
 # Turkish Language Standards
 
-## Core Language Requirements
+## CONTEXT FIRST - UNDERSTAND THE LANGUAGE REQUIREMENTS
 
-### 1. Diacritics (Türkçe Karakterler)
-Always use proper Turkish diacritics:
+Before writing ANY Turkish content:
+1. **IDENTIFY THE PLATFORM**: Instagram (casual), WhatsApp (business), Google Reviews (formal)
+2. **UNDERSTAND THE AUDIENCE**: Turkish customers expecting professional service
+3. **CHECK EXISTING PATTERNS**: Follow established tone and structure
+4. **VERIFY CHARACTER ENCODING**: UTF-8 support for Turkish diacritics
+
+## CHALLENGE THE REQUEST - LANGUAGE EDGE CASES
+
+Critical questions for Turkish content:
+- **TONE LEVEL**: Formal "Siz" or casual "sen"? (Always "Siz" for business)
+- **PLATFORM CONSTRAINTS**: Character limits, emoji policies, template restrictions?
+- **DIACRITIC SUPPORT**: Will the platform display ç, ğ, ı, ö, ş, ü correctly?
+- **CULTURAL CONTEXT**: Is the response appropriate for Turkish business culture?
+
+## HOLD THE STANDARD - TURKISH LANGUAGE QUALITY
+
+### 1. Diacritics (Türkçe Karakterler) - NON-NEGOTIABLE
+**EVERY TURKISH CHARACTER MUST BE CORRECT** - No shortcuts, no ASCII substitutions:
 
 **Correct Characters:**
 - ç, ğ, ı, ö, ş, ü (lowercase)
