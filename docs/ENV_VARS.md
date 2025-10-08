@@ -38,6 +38,22 @@ This document describes all environment variables required for the Multi-Platfor
 - **Example**: `N8N_ENCRYPTION_KEY=your_32_character_encryption_key_here`
 - **Generation**: Use `openssl rand -hex 16` to generate
 
+#### `N8N_WEBHOOK_URL`
+
+- **Description**: Publicly reachable base URL n8n uses when generating webhook endpoints and callback URLs
+- **Required**: Yes
+- **Default**: `http://localhost:5678`
+- **Example**: `N8N_WEBHOOK_URL=https://n8n.example.com`
+- **Notes**: Should match the externally accessible address of your n8n instance (including protocol and port). Keep it in sync with `WEBHOOK_URL` so webhook executions use the correct hostname.
+
+#### `WEBHOOK_URL`
+
+- **Description**: Base URL that n8n advertises for incoming webhook executions
+- **Required**: Yes (for production deployments behind a reverse proxy)
+- **Default**: `http://localhost:5678`
+- **Example**: `WEBHOOK_URL=https://n8n.example.com`
+- **Notes**: Use the same value as `N8N_WEBHOOK_URL` to prevent DNS resolution mismatches during cross-workflow HTTP requests.
+
 ### OpenAI Integration
 
 #### `OPENAI_API_KEY`
