@@ -27,11 +27,11 @@
           "conditions": [
             {
               "id": "verify-token-condition",
-              "leftValue": "={{ $json.query['hub.verify_token'] }}",
-              "rightValue": "={{ $env.META_VERIFY_TOKEN }}",
+              "leftValue": "={{ $json.query && $json.query['hub.mode'] === 'subscribe' ? $json.query['hub.verify_token'] === $env.META_VERIFY_TOKEN : true }}",
+              "rightValue": true,
               "operator": {
-                "type": "string",
-                "operation": "equals"
+                "type": "boolean",
+                "operation": "true"
               }
             }
           ],
