@@ -30,8 +30,8 @@
               "leftValue": "={{ $method === 'GET' && $json.query && $json.query['hub.mode'] === 'subscribe' ? ($json.query['hub.verify_token'] || $env.META_VERIFY_TOKEN) : $env.META_VERIFY_TOKEN }}",
               "rightValue": "={{ $env.META_VERIFY_TOKEN }}",
               "operator": {
-                "type": "string",
-                "operation": "equals"
+                "type": "boolean",
+                "operation": "true"
               }
             }
           ],
