@@ -38,6 +38,22 @@ This document describes all environment variables required for the Multi-Platfor
 - **Example**: `N8N_ENCRYPTION_KEY=your_32_character_encryption_key_here`
 - **Generation**: Use `openssl rand -hex 16` to generate
 
+#### `N8N_WEBHOOK_URL`
+
+- **Description**: Publicly reachable base URL n8n uses when generating webhook endpoints and callback URLs
+- **Required**: Yes
+- **Default**: `http://localhost:5678`
+- **Example**: `N8N_WEBHOOK_URL=https://n8n.example.com`
+- **Notes**: Should match the externally accessible address of your n8n instance (including protocol and port). Keep it in sync with `WEBHOOK_URL` so webhook executions use the correct hostname.
+
+#### `WEBHOOK_URL`
+
+- **Description**: Base URL that n8n advertises for incoming webhook executions
+- **Required**: Yes (for production deployments behind a reverse proxy)
+- **Default**: `http://localhost:5678`
+- **Example**: `WEBHOOK_URL=https://n8n.example.com`
+- **Notes**: Use the same value as `N8N_WEBHOOK_URL` to prevent DNS resolution mismatches during cross-workflow HTTP requests.
+
 ### OpenAI Integration
 
 #### `OPENAI_API_KEY`
@@ -58,14 +74,6 @@ This document describes all environment variables required for the Multi-Platfor
 - **Scope**: `pages_messaging`, `pages_show_list`
 - **Example**: `FB_PAGE_TOKEN=your_facebook_page_token_here`
 
-#### `FB_VERIFY_TOKEN`
-
-- **Description**: Webhook verification token for Facebook/Instagram
-- **Required**: Yes (for Instagram functionality)
-- **Security**: Medium - Webhook validation
-- **Format**: Custom string (you define this)
-- **Example**: `FB_VERIFY_TOKEN=your_custom_verify_token`
-
 #### `WA_PERMANENT_TOKEN`
 
 - **Description**: WhatsApp Business Cloud API permanent access token
@@ -81,13 +89,15 @@ This document describes all environment variables required for the Multi-Platfor
 - **Security**: Low - Public identifier
 - **Example**: `WA_PHONE_NUMBER_ID=1234567890123456`
 
-#### `WA_VERIFY_TOKEN`
+#### `META_VERIFY_TOKEN`
 
-- **Description**: Webhook verification token for WhatsApp
-- **Required**: Yes (for WhatsApp functionality)
-- **Security**: Medium - Webhook validation
+- **Description**: Shared Meta webhook verification token for Instagram and WhatsApp webhooks
+- **Required**: Yes (for Instagram and WhatsApp functionality)
+- **Security**: Medium - Webhook validation secret
+- **Scope**: Configure in Meta Developer Console for both Instagram and WhatsApp subscriptions
 - **Format**: Custom string (you define this)
-- **Example**: `WA_VERIFY_TOKEN=your_whatsapp_verify_token`
+- **Example**: `META_VERIFY_TOKEN=your_meta_webhook_verify_token`
+- **Note**: Legacy `FB_VERIFY_TOKEN` and `WA_VERIFY_TOKEN` variables are deprecated and ignored by current workflows.
 
 ### Google Business Profile Integration
 
@@ -162,8 +172,7 @@ These variables provide API access and should be protected:
 
 These variables are used for webhook validation:
 
-- `FB_VERIFY_TOKEN`
-- `WA_VERIFY_TOKEN`
+- `META_VERIFY_TOKEN`
 - `SLACK_WEBHOOK_URL`
 
 ### Low Security Variables
@@ -204,10 +213,10 @@ OPENAI_API_KEY=sk-your_openai_api_key_here
 
 # Meta Platforms (Instagram/WhatsApp)
 FB_PAGE_TOKEN=your_facebook_page_token_here
-FB_VERIFY_TOKEN=your_custom_verify_token
 WA_PERMANENT_TOKEN=your_whatsapp_permanent_token
 WA_PHONE_NUMBER_ID=1234567890123456
-WA_VERIFY_TOKEN=your_whatsapp_verify_token
+META_VERIFY_TOKEN=your_meta_webhook_verify_token
+# Legacy FB_VERIFY_TOKEN / WA_VERIFY_TOKEN values are no longer read.
 
 # Google Business Profile
 GOOGLE_SERVICE_ACCOUNT_KEY=eyJ0eXBlIjoi...
@@ -235,7 +244,7 @@ make up
 ### Instagram Configuration
 
 1. Create Facebook App and get Page Access Token
-2. Set up webhook endpoint with `FB_VERIFY_TOKEN`
+2. Set up webhook endpoint with `META_VERIFY_TOKEN`
 3. Subscribe to `messages` webhook events
 4. Configure webhook URL: `https://your-domain.com/webhook/instagram-intake`
 
@@ -243,7 +252,7 @@ make up
 
 1. Set up WhatsApp Business Cloud API
 2. Get permanent access token and phone number ID
-3. Configure webhook with `WA_VERIFY_TOKEN`
+3. Configure webhook with `META_VERIFY_TOKEN`
 4. Configure webhook URL: `https://your-domain.com/webhook/whatsapp-intake`
 
 ### Google Business Profile Configuration

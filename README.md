@@ -46,6 +46,8 @@ A production-ready automated customer service system that handles Instagram DMs,
    SLACK_WEBHOOK_URL=your_slack_webhook_url_for_alerts
    ```
 
+   > **Heads-up**: Legacy `FB_VERIFY_TOKEN` and `WA_VERIFY_TOKEN` entries are deprecated and ignored—configure only `META_VERIFY_TOKEN` for Meta webhook verification.
+
 3. **Start the system**:
    ```bash
    make up && make import && make activate
