@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: multi_platform_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-n8n}
+      POSTGRES_USER: ${POSTGRES_USER:-n8n}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-n8n}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-n8n} -d ${POSTGRES_DB:-n8n}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: multi_platform_n8n
+    environment:
+      # Database configuration
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${POSTGRES_DB:-n8n}
+      DB_POSTGRESDB_USER: ${POSTGRES_USER:-n8n}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:-n8n}
+      
+      # n8n configuration
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
+      WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678}
+      
+      # Generic timezone and locale
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-Europe/Istanbul}
+      TZ: ${TZ:-Europe/Istanbul}
+      
+      # Security
+      N8N_SECURE_COOKIE: ${N8N_SECURE_COOKIE:-false}
+      
+      # Workflow execution
+      EXECUTIONS_PROCESS: main
+      EXECUTIONS_DATA_SAVE_ON_ERROR: all
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: all
+      EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS: true
+      
+      # API Keys and tokens (loaded from environment)
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      FB_PAGE_TOKEN: ${FB_PAGE_TOKEN}
+      WA_PERMANENT_TOKEN: ${WA_PERMANENT_TOKEN}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
+      META_VERIFY_TOKEN: ${META_VERIFY_TOKEN}
+      GOOGLE_SERVICE_ACCOUNT_KEY: ${GOOGLE_SERVICE_ACCOUNT_KEY}
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    volumes:
+      # Mount repository at stable path for workflow access
+      - .:/app/repository
+      # n8n data persistence
+      - n8n_data:/home/node/.n8n
+      # Workflows directory
+      - ./workflows:/app/workflows
+      # Templates directory
+      - ./templates:/app/templates
+      # Scripts directory
+      - ./scripts:/app/scripts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    command: n8n start
+
+volumes:
+  postgres_data:
+    driver: local
+  n8n_data:
+    driver: local
+
+networks:
+  default:
+    name: multi_platform_network

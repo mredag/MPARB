@@ -1,0 +1,40 @@
+{
+  "google": {
+    "tr": {
+      "positive": "Değerli {first_name}, güzel yorumunuz için teşekkür ederiz. Sizi tekrar {brand_name}'de ağırlamaktan mutluluk duyarız.",
+      "negative": "Sayın {first_name}, yaşadığınız olumsuz deneyim için özür dileriz. Durumu düzeltmek için derhal sizinle iletişime geçmek istiyoruz. Lütfen {phone} numaramızdan bizi arayın veya {booking_link} üzerinden randevu alın."
+    },
+    "en": {
+      "positive": "Dear {first_name}, thank you for your wonderful review. We look forward to welcoming you back to {brand_name}.",
+      "negative": "Dear {first_name}, we apologize for your negative experience. We would like to contact you immediately to resolve this matter. Please call us at {phone} or book an appointment at {booking_link}."
+    }
+  },
+  "instagram": {
+    "tr": {
+      "greeting": "Merhaba {first_name}, {brand_name}'ye hoş geldiniz. Size nasıl yardımcı olabiliriz?",
+      "booking": "Randevu için {booking_link} adresini ziyaret edebilir veya {phone} numaramızdan bizi arayabilirsiniz.",
+      "pricing": "Fiyat bilgilerimiz için lütfen {phone} numaramızdan bizi arayın veya DM üzerinden detayları paylaşalım.",
+      "general": "Sorularınız için {phone} numaramızdan bize ulaşabilir veya DM üzerinden yazabilirsiniz."
+    },
+    "en": {
+      "greeting": "Hello {first_name}, welcome to {brand_name}. How can we help you?",
+      "booking": "For appointments, you can visit {booking_link} or call us at {phone}.",
+      "pricing": "For pricing information, please call us at {phone} or let us share the details via DM.",
+      "general": "For your questions, you can reach us at {phone} or write via DM."
+    }
+  },
+  "whatsapp": {
+    "tr": {
+      "outside24h": "Merhaba {first_name}, {brand_name}'den selamlar. Size nasıl yardımcı olabiliriz?\n\n1️⃣ Randevu almak için\n2️⃣ Fiyat bilgisi için\n3️⃣ Genel bilgi için\n\nNumara yazarak seçiminizi yapabilirsiniz.",
+      "booking_template": "Randevu için {booking_link} adresini ziyaret edebilir veya {phone} numaramızdan bizi arayabilirsiniz.",
+      "pricing_template": "Fiyat bilgilerimiz için lütfen {phone} numaramızdan bizi arayın.",
+      "info_template": "Detaylı bilgi için {phone} numaramızdan bize ulaşabilirsiniz."
+    },
+    "en": {
+      "outside24h": "Hello {first_name}, greetings from {brand_name}. How can we help you?\n\n1️⃣ To make an appointment\n2️⃣ For pricing information\n3️⃣ For general information\n\nYou can make your choice by writing the number.",
+      "booking_template": "For appointments, you can visit {booking_link} or call us at {phone}.",
+      "pricing_template": "For pricing information, please call us at {phone}.",
+      "info_template": "For detailed information, you can reach us at {phone}."
+    }
+  }
+}

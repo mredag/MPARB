@@ -1,0 +1,32 @@
+{
+  "name": "multi-platform-auto-response-tests",
+  "version": "1.0.0",
+  "description": "Essential testing suite for multi-platform auto response system",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --timeout 15000 --recursive .",
+    "test:instagram": "mocha --timeout 15000 instagram_dm_test.js",
+    "test:whatsapp": "mocha --timeout 15000 whatsapp_session_test.js",
+    "test:google": "mocha --timeout 15000 google_reviews_test.js",
+    "test:watch": "mocha --timeout 15000 --recursive . --watch"
+  },
+  "keywords": [
+    "testing",
+    "n8n",
+    "instagram",
+    "whatsapp",
+    "google-reviews",
+    "turkish",
+    "automation"
+  ],
+  "author": "Multi-Platform Auto Response System",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "chai": "^4.3.10",
+    "mocha": "^10.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

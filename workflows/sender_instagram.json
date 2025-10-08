@@ -1,0 +1,405 @@
+{
+  "name": "Instagram Sender",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sender-instagram",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "sender-instagram"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Record start time for response time calculation\nconst startTime = Date.now();\n\n// Extract data from webhook payload\nconst payload = $input.first().json.body;\n\nreturn {\n  sender_id: payload.sender_id,\n  reply_text: payload.reply_text,\n  correlation_id: payload.correlation_id,\n  start_time: startTime,\n  language: payload.language,\n  sentiment: payload.sentiment,\n  intent: payload.intent\n};"
+      },
+      "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012",
+      "name": "Extract Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://graph.facebook.com/v17.0/me/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.FB_PAGE_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"recipient\": {\n    \"id\": \"{{ $json.sender_id }}\"\n  },\n  \"message\": {\n    \"text\": \"{{ $json.reply_text }}\"\n  },\n  \"messaging_type\": \"RESPONSE\"\n}",
+        "options": {}
+      },
+      "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+      "name": "Send Instagram Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calculate response time and determine outcome\nconst startTime = $('Extract Payload').first().json.start_time;\nconst responseTimeMs = Date.now() - startTime;\n\n// Check if the Instagram API call was successful\nconst apiResponse = $input.first();\nlet outcome = 'sent';\nlet errorMessage = null;\n\nif (apiResponse.error) {\n  outcome = 'failed';\n  errorMessage = apiResponse.error.message || 'Instagram API call failed';\n} else if (apiResponse.json && apiResponse.json.error) {\n  outcome = 'failed';\n  errorMessage = apiResponse.json.error.message || 'Instagram API returned error';\n}\n\nreturn {\n  correlation_id: $('Extract Payload').first().json.correlation_id,\n  response_time_ms: responseTimeMs,\n  outcome: outcome,\n  error_message: errorMessage,\n  sender_id: $('Extract Payload').first().json.sender_id,\n  api_response: apiResponse.json\n};"
+      },
+      "id": "d4e5f6g7-h8i9-0123-defg-456789012345",
+      "name": "Calculate Response Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "name"
+        },
+        "table": {
+          "__rl": true,
+          "value": "messages",
+          "mode": "name"
+        },
+        "updateKey": {
+          "__rl": true,
+          "value": "correlation_id",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "response_time_ms": "={{ $json.response_time_ms }}",
+            "outcome": "={{ $json.outcome }}"
+          },
+          "matchingColumns": [
+            {
+              "column": "correlation_id",
+              "value": "={{ $json.correlation_id }}"
+            }
+          ],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",
+      "name": "Update Message Record",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1120,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-main",
+          "name": "PostgreSQL Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "failed-outcome-check",
+              "leftValue": "={{ $json.outcome }}",
+              "rightValue": "failed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f6g7h8i9-j0k1-2345-fghi-678901234567",
+      "name": "Check if Failed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "name"
+        },
+        "table": {
+          "__rl": true,
+          "value": "errors",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflow": "sender_instagram",
+            "node": "Send Instagram Message",
+            "message": "={{ $json.error_message }}",
+            "payload": "={{ JSON.stringify({ correlation_id: $json.correlation_id, sender_id: $json.sender_id, api_response: $json.api_response }) }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "g7h8i9j0-k1l2-3456-ghij-789012345678",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1560,
+        200
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-main",
+          "name": "PostgreSQL Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "slack-webhook-exists",
+              "leftValue": "={{ $env.SLACK_WEBHOOK_URL }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "h8i9j0k1-l2m3-4567-hijk-890123456789",
+      "name": "Slack Configured Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"text\": \"🚨 Instagram Sender Error\",\n  \"blocks\": [\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Instagram message sending failed*\\n\\n*Correlation ID:* {{ $json.correlation_id }}\\n*Sender ID:* {{ $json.sender_id }}\\n*Error:* {{ $json.error_message }}\\n*Response Time:* {{ $json.response_time_ms }}ms\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "i9j0k1l2-m3n4-5678-ijkl-901234567890",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        100
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"{{ $json.outcome }}\",\n  \"correlation_id\": \"{{ $json.correlation_id }}\",\n  \"response_time_ms\": {{ $json.response_time_ms }},\n  \"message\": \"{{ $json.outcome === 'sent' ? 'Instagram message sent successfully' : 'Instagram message sending failed' }}\"\n}"
+      },
+      "id": "j0k1l2m3-n4o5-6789-jklm-012345678901",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        400
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Payload": {
+      "main": [
+        [
+          {
+            "node": "Send Instagram Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Instagram Message": {
+      "main": [
+        [
+          {
+            "node": "Calculate Response Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Response Metrics": {
+      "main": [
+        [
+          {
+            "node": "Update Message Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Message Record": {
+      "main": [
+        [
+          {
+            "node": "Check if Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Failed": {
+      "main": [
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Error": {
+      "main": [
+        [
+          {
+            "node": "Slack Configured Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Configured Check": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Slack Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "sender-instagram-v1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "sender-instagram-workflow",
+  "tags": []
+}

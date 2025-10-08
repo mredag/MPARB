@@ -1,0 +1,608 @@
+{
+  "name": "Google Business Profile Sender",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sender-gbp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "sender-gbp"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Record start time for response time calculation\nconst startTime = Date.now();\n\n// Extract data from webhook payload\nconst payload = $input.first().json.body;\n\nreturn {\n  review_id: payload.review_id,\n  reply_text: payload.reply_text,\n  correlation_id: payload.correlation_id,\n  rating: payload.rating,\n  start_time: startTime,\n  language: payload.language,\n  sentiment: payload.sentiment,\n  intent: payload.intent,\n  author: payload.author\n};"
+      },
+      "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012",
+      "name": "Extract Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "rating-check-4-5-stars",
+              "leftValue": "={{ $json.rating }}",
+              "rightValue": 4,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+      "name": "Check Rating for Reply",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://mybusiness.googleapis.com/v4/accounts/{{ $env.GOOGLE_ACCOUNT_ID }}/locations/{{ $env.GOOGLE_LOCATION_ID }}/reviews/{{ $json.review_id }}/reply",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.GOOGLE_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"comment\": \"{{ $json.reply_text }}\"\n}",
+        "options": {}
+      },
+      "id": "d4e5f6g7-h8i9-0123-defg-456789012345",
+      "name": "Send Google Review Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "low-rating-check",
+              "leftValue": "={{ $json.rating }}",
+              "rightValue": 2,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",
+      "name": "Check for Low Rating Alert",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        900,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calculate response time and determine outcome for successful reply\nconst startTime = $('Extract Payload').first().json.start_time;\nconst responseTimeMs = Date.now() - startTime;\n\n// Check if the Google Business Profile API call was successful\nconst apiResponse = $input.first();\nlet outcome = 'sent';\nlet errorMessage = null;\n\nif (apiResponse.error) {\n  outcome = 'failed';\n  errorMessage = apiResponse.error.message || 'Google Business Profile API call failed';\n} else if (apiResponse.json && apiResponse.json.error) {\n  outcome = 'failed';\n  errorMessage = apiResponse.json.error.message || 'Google Business Profile API returned error';\n}\n\nreturn {\n  correlation_id: $('Extract Payload').first().json.correlation_id,\n  response_time_ms: responseTimeMs,\n  outcome: outcome,\n  error_message: errorMessage,\n  review_id: $('Extract Payload').first().json.review_id,\n  rating: $('Extract Payload').first().json.rating,\n  api_response: apiResponse.json\n};"
+      },
+      "id": "f6g7h8i9-j0k1-2345-fghi-678901234567",
+      "name": "Calculate Response Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle low rating alert (≤2 stars)\nconst extractPayload = $('Extract Payload').first().json;\n\nconst alertData = {\n  correlation_id: extractPayload.correlation_id,\n  response_time_ms: Date.now() - extractPayload.start_time,\n  outcome: 'escalated',\n  review_id: extractPayload.review_id,\n  rating: extractPayload.rating,\n  author: extractPayload.author,\n  reply_text: extractPayload.reply_text,\n  action: 'slack_alert_sent'\n};\n\nconsole.log('Low rating Google Review escalated:', JSON.stringify(alertData));\n\nreturn alertData;"
+      },
+      "id": "g7h8i9j0-k1l2-3456-ghij-789012345678",
+      "name": "Prepare Low Rating Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle 3-star rating (log only)\nconst extractPayload = $('Extract Payload').first().json;\n\nconst logData = {\n  correlation_id: extractPayload.correlation_id,\n  response_time_ms: Date.now() - extractPayload.start_time,\n  outcome: 'logged_only',\n  review_id: extractPayload.review_id,\n  rating: extractPayload.rating,\n  author: extractPayload.author,\n  action: 'logged_no_action'\n};\n\nconsole.log('3-star Google Review logged only:', JSON.stringify(logData));\n\nreturn logData;"
+      },
+      "id": "h8i9j0k1-l2m3-4567-hijk-890123456789",
+      "name": "Log 3-Star Review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "name"
+        },
+        "table": {
+          "__rl": true,
+          "value": "reviews",
+          "mode": "name"
+        },
+        "updateKey": {
+          "__rl": true,
+          "value": "correlation_id",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "response_time_ms": "={{ $json.response_time_ms }}",
+            "outcome": "={{ $json.outcome }}"
+          },
+          "matchingColumns": [
+            {
+              "column": "correlation_id",
+              "value": "={{ $json.correlation_id }}"
+            }
+          ],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "i9j0k1l2-m3n4-5678-ijkl-901234567890",
+      "name": "Update Review Record",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1340,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-main",
+          "name": "PostgreSQL Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "failed-outcome-check",
+              "leftValue": "={{ $json.outcome }}",
+              "rightValue": "failed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "j0k1l2m3-n4o5-6789-jklm-012345678901",
+      "name": "Check if Failed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "name"
+        },
+        "table": {
+          "__rl": true,
+          "value": "errors",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflow": "sender_gbp",
+            "node": "Send Google Review Reply",
+            "message": "={{ $json.error_message }}",
+            "payload": "={{ JSON.stringify({ correlation_id: $json.correlation_id, review_id: $json.review_id, rating: $json.rating, api_response: $json.api_response }) }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "k1l2m3n4-o5p6-7890-klmn-123456789012",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1780,
+        200
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-main",
+          "name": "PostgreSQL Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "escalated-outcome-check",
+              "leftValue": "={{ $json.outcome }}",
+              "rightValue": "escalated",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "l2m3n4o5-p6q7-8901-lmno-234567890123",
+      "name": "Check if Escalated",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "slack-webhook-exists",
+              "leftValue": "={{ $env.SLACK_WEBHOOK_URL }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "m3n4o5p6-q7r8-9012-mnop-345678901234",
+      "name": "Slack Configured Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"text\": \"🚨 Google Business Profile Alert\",\n  \"blocks\": [\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*{{ $json.outcome === 'failed' ? 'Google Review reply failed' : 'Low rating Google Review (≤2 stars)' }}*\\n\\n*Correlation ID:* {{ $json.correlation_id }}\\n*Review ID:* {{ $json.review_id }}\\n*Rating:* {{ $json.rating }} stars\\n*Author:* {{ $json.author }}{{ $json.error_message ? '\\n*Error:* ' + $json.error_message : '' }}{{ $json.reply_text ? '\\n*AI Draft Reply:* ' + $json.reply_text : '' }}\\n*Response Time:* {{ $json.response_time_ms }}ms\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "n4o5p6q7-r8s9-0123-nopq-456789012345",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2220,
+        200
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"{{ $json.outcome }}\",\n  \"correlation_id\": \"{{ $json.correlation_id }}\",\n  \"response_time_ms\": {{ $json.response_time_ms }},\n  \"rating\": {{ $json.rating }},\n  \"message\": \"{{ $json.outcome === 'sent' ? 'Google Review reply sent successfully' : $json.outcome === 'escalated' ? 'Low rating review escalated to Slack' : $json.outcome === 'logged_only' ? '3-star review logged only' : 'Google Review reply failed' }}\"\n}"
+      },
+      "id": "o5p6q7r8-s9t0-1234-opqr-567890123456",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        500
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Payload": {
+      "main": [
+        [
+          {
+            "node": "Check Rating for Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Rating for Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Google Review Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check for Low Rating Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Google Review Reply": {
+      "main": [
+        [
+          {
+            "node": "Calculate Response Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for Low Rating Alert": {
+      "main": [
+        [
+          {
+            "node": "Prepare Low Rating Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log 3-Star Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Response Metrics": {
+      "main": [
+        [
+          {
+            "node": "Update Review Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Low Rating Alert": {
+      "main": [
+        [
+          {
+            "node": "Update Review Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log 3-Star Review": {
+      "main": [
+        [
+          {
+            "node": "Update Review Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Review Record": {
+      "main": [
+        [
+          {
+            "node": "Check if Failed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check if Escalated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Failed": {
+      "main": [
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Escalated": {
+      "main": [
+        [
+          {
+            "node": "Slack Configured Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Error": {
+      "main": [
+        [
+          {
+            "node": "Slack Configured Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Configured Check": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Slack Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "sender-gbp-v1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "sender-gbp-workflow",
+  "tags": []
+}

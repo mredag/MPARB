@@ -1,0 +1,645 @@
+{
+  "name": "Processor",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "processor",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b8c7d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "processor-webhook"
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "message",
+        "model": "gpt-3.5-turbo",
+        "messages": {
+          "messageValues": [
+            {
+              "role": "system",
+              "content": "You are a Turkish customer service AI assistant. Analyze the incoming message and respond with a JSON object containing:\n\n1. language: detected language code (tr, en, etc.)\n2. sentiment: Positive, Neutral, or Negative\n3. intent: Greeting, Booking, Pricing, Complaint, or Other\n4. reply_text: appropriate response under 500 characters\n\nRules:\n- Default to Turkish (tr) with proper diacritics\n- Use polite \"Siz\" form in Turkish\n- Keep responses concise and professional\n- For Google Reviews: NO emojis, formal tone\n- For Instagram/WhatsApp: friendly but professional\n- Include business-appropriate responses\n\nReturn ONLY valid JSON, no other text."
+            },
+            {
+              "role": "user",
+              "content": "Platform: {{ $json.platform }}\nMessage: {{ $json.text }}\nTimestamp: {{ $json.timestamp }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 200
+        }
+      },
+      "id": "c9d8e7f6-a5b4-9c8d-1e2f-3a4b5c6d7e8f",
+      "name": "OpenAI Chat",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "continueOnFail": true,
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse OpenAI response and structure the output\nconst openaiItem = $input.first();\n\n// Check if OpenAI call was successful\nif (openaiItem.error) {\n  // OpenAI call failed, return fallback response\n  const correlationId = $('Webhook').first().json.body.correlation_id;\n  \n  return {\n    language: 'tr',\n    sentiment: 'Neutral',\n    intent: 'Other',\n    reply_text: 'Teşekkür ederiz, mesajınızı aldık. En kısa sürede size dönüş yapacağız.',\n    correlation_id: correlationId,\n    processed_at: new Date().toISOString(),\n    error: 'OpenAI API failed after retries',\n    fallback: true\n  };\n}\n\n// OpenAI call was successful\nconst openaiResponse = openaiItem.json.message.content;\n\ntry {\n  // Parse the JSON response from OpenAI\n  const aiResult = JSON.parse(openaiResponse);\n  \n  // Get correlation_id from original request\n  const correlationId = $('Webhook').first().json.body.correlation_id;\n  \n  // Structure the final response\n  const response = {\n    language: aiResult.language || 'tr',\n    sentiment: aiResult.sentiment || 'Neutral',\n    intent: aiResult.intent || 'Other',\n    reply_text: aiResult.reply_text || 'Teşekkür ederiz, en kısa sürede size dönüş yapacağız.',\n    correlation_id: correlationId,\n    processed_at: new Date().toISOString()\n  };\n  \n  return response;\n  \n} catch (error) {\n  // Fallback response if JSON parsing fails\n  const correlationId = $('Webhook').first().json.body.correlation_id;\n  \n  return {\n    language: 'tr',\n    sentiment: 'Neutral',\n    intent: 'Other',\n    reply_text: 'Teşekkür ederiz, mesajınızı aldık. En kısa sürede size dönüş yapacağız.',\n    correlation_id: correlationId,\n    processed_at: new Date().toISOString(),\n    error: 'Failed to parse OpenAI response',\n    fallback: true\n  };\n}"
+      },
+      "id": "d0e9f8a7-b6c5-0d9e-2f3a-4b5c6d7e8f9a",
+      "name": "Structure Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "platform-check",
+              "leftValue": "={{ $('Webhook').first().json.body.platform }}",
+              "rightValue": "instagram",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "platform-router-node",
+      "name": "Platform Router",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "whatsapp-platform-check",
+              "leftValue": "={{ $('Webhook').first().json.body.platform }}",
+              "rightValue": "whatsapp",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "whatsapp-router-node",
+      "name": "WhatsApp Router",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        900,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "google-reviews-platform-check",
+              "leftValue": "={{ $('Webhook').first().json.body.platform }}",
+              "rightValue": "google_reviews",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "google-reviews-router-node",
+      "name": "Google Reviews Router",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        900,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.N8N_WEBHOOK_URL }}/webhook/sender-instagram",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-correlation-id",
+              "value": "={{ $json.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "sender_id",
+              "value": "={{ $('Webhook').first().json.body.sender_id }}"
+            },
+            {
+              "name": "reply_text",
+              "value": "={{ $json.reply_text }}"
+            },
+            {
+              "name": "correlation_id",
+              "value": "={{ $json.correlation_id }}"
+            },
+            {
+              "name": "language",
+              "value": "={{ $json.language }}"
+            },
+            {
+              "name": "sentiment",
+              "value": "={{ $json.sentiment }}"
+            },
+            {
+              "name": "intent",
+              "value": "={{ $json.intent }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "call-instagram-sender",
+      "name": "Call Instagram Sender",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.N8N_WEBHOOK_URL }}/webhook/sender-whatsapp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-correlation-id",
+              "value": "={{ $json.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $('Webhook').first().json.body.phone }}"
+            },
+            {
+              "name": "reply_text",
+              "value": "={{ $json.reply_text }}"
+            },
+            {
+              "name": "correlation_id",
+              "value": "={{ $json.correlation_id }}"
+            },
+            {
+              "name": "session_mode",
+              "value": "={{ $('Webhook').first().json.body.session_mode || 'text' }}"
+            },
+            {
+              "name": "language",
+              "value": "={{ $json.language }}"
+            },
+            {
+              "name": "sentiment",
+              "value": "={{ $json.sentiment }}"
+            },
+            {
+              "name": "intent",
+              "value": "={{ $json.intent }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "call-whatsapp-sender",
+      "name": "Call WhatsApp Sender",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.N8N_WEBHOOK_URL }}/webhook/sender-gbp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-correlation-id",
+              "value": "={{ $json.correlation_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "review_id",
+              "value": "={{ $('Webhook').first().json.body.review_id }}"
+            },
+            {
+              "name": "reply_text",
+              "value": "={{ $json.reply_text }}"
+            },
+            {
+              "name": "correlation_id",
+              "value": "={{ $json.correlation_id }}"
+            },
+            {
+              "name": "rating",
+              "value": "={{ $('Webhook').first().json.body.rating }}"
+            },
+            {
+              "name": "author",
+              "value": "={{ $('Webhook').first().json.body.author }}"
+            },
+            {
+              "name": "language",
+              "value": "={{ $json.language }}"
+            },
+            {
+              "name": "sentiment",
+              "value": "={{ $json.sentiment }}"
+            },
+            {
+              "name": "intent",
+              "value": "={{ $json.intent }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "call-gbp-sender",
+      "name": "Call Google Business Profile Sender",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "e1f0a9b8-c7d6-1e0f-3a4b-5c6d7e8f9a0b",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "messages",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "platform": "={{ $('Webhook').first().json.body.platform }}",
+            "external_id": "={{ $('Webhook').first().json.body.external_id || null }}",
+            "sender": "={{ $('Webhook').first().json.body.sender || $('Webhook').first().json.body.phone || $('Webhook').first().json.body.sender_id }}",
+            "language": "={{ $json.language }}",
+            "sentiment": "={{ $json.sentiment }}",
+            "intent": "={{ $json.intent }}",
+            "correlation_id": "={{ $json.correlation_id }}",
+            "response_time_ms": "={{ Math.round(Date.now() - new Date($('Webhook').first().json.body.timestamp).getTime()) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "f2a1b0c9-d8e7-2f1a-4b5c-6d7e8f9a0b1c",
+      "name": "Log to Database",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        680,
+        480
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-credentials",
+          "name": "PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "error-condition",
+              "leftValue": "={{ $json.fallback }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "a3b2c1d0-e9f8-3a2b-5c6d-7e8f9a0b1c2d",
+      "name": "Check for Fallback",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        680,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "errors",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "workflow": "processor",
+            "node": "OpenAI Chat",
+            "message": "={{ $json.error || 'OpenAI API call failed after 3 retries' }}",
+            "payload": "={{ JSON.stringify($('Webhook').first().json.body) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "b4c3d2e1-f0a9-4b3c-6d7e-8f9a0b1c2d3e",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        900,
+        700
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-credentials",
+          "name": "PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"text\": \"🚨 Processor Error\",\n  \"blocks\": [\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Processor workflow error*\\n\\n*Correlation ID:* {{ $('Webhook').first().json.body.correlation_id }}\\n*Error:* {{ $json.error || 'OpenAI API call failed after 3 retries' }}\\n*Platform:* {{ $('Webhook').first().json.body.platform }}\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "c5d4e3f2-a1b0-5c4d-7e8f-9a0b1c2d3e4f",
+      "name": "Alert Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1120,
+        700
+      ],
+      "continueOnFail": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat": {
+      "main": [
+        [
+          {
+            "node": "Structure Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structure Response": {
+      "main": [
+        [
+          {
+            "node": "Platform Router",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log to Database",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check for Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Platform Router": {
+      "main": [
+        [
+          {
+            "node": "Call Instagram Sender",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WhatsApp Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Router": {
+      "main": [
+        [
+          {
+            "node": "Call WhatsApp Sender",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Reviews Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Reviews Router": {
+      "main": [
+        [
+          {
+            "node": "Call Google Business Profile Sender",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Instagram Sender": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call WhatsApp Sender": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Google Business Profile Sender": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for Fallback": {
+      "main": [
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Error": {
+      "main": [
+        [
+          {
+            "node": "Alert Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "processor-v1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "processor-workflow",
+  "tags": []
+}
