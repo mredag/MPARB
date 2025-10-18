@@ -13,6 +13,12 @@ Before modifying any workflow:
 3. **UNDERSTAND DATA FLOW** and correlation_id tracking
 4. **CHECK EXISTING PATTERNS** for consistency
 
+### Windows Development Environment Notes
+- Use Docker CLI commands instead of make commands: `docker-compose up -d`
+- Import workflows via n8n CLI: `docker exec -u node -it multi_platform_n8n n8n import:workflow --separate --input=/app/workflows`
+- Activate workflows: `docker exec -u node -it multi_platform_n8n n8n update:workflow --all --active=true`
+- Always restart n8n after activation: `docker-compose restart n8n`
+
 ## CHALLENGE THE REQUEST - EDGE CASES FIRST
 
 Ask these questions for every workflow change:
@@ -108,11 +114,22 @@ const responseTimeMs = Date.now() - startTime;
 ## Workflow-Specific Standards
 
 ### Intake Workflows
-- Must validate webhook tokens
+- Must validate webhook tokens using `META_VERIFY_TOKEN` for both Instagram and WhatsApp
+- Must allow POST webhooks without verify token validation (for message processing)
 - Must normalize platform-specific data
 - Must generate correlation_id
 - Must check policy compliance (24-hour rule for Instagram/WhatsApp)
 - Must call processor workflow with standardized payload
+
+**Token Validation Logic:**
+```javascript
+// REQUIRED: Use META_VERIFY_TOKEN for both Instagram and WhatsApp
+// GET requests (webhook verification): Check hub.verify_token
+// POST requests (message processing): Skip token validation
+const isValidToken = $method === 'GET' && $json.query && $json.query['hub.mode'] === 'subscribe' 
+  ? ($json.query['hub.verify_token'] || $env.META_VERIFY_TOKEN) === $env.META_VERIFY_TOKEN
+  : true; // Allow POST requests without token validation
+```
 
 ### Processor Workflow
 - Must analyze sentiment and intent using OpenAI

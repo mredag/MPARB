@@ -187,6 +187,19 @@ These variables contain public or non-sensitive information:
 - `BUSINESS_PHONE`
 - `BOOKING_LINK`
 
+## Windows-Specific Configuration Notes
+
+### Port Conflicts
+On Windows systems, PostgreSQL port 5432 is often already in use. The system is configured to use port 15432 by default to avoid conflicts. If you encounter port binding errors, check which ports are available:
+
+```bash
+# Check if port is in use (Windows)
+netstat -an | findstr :5432
+```
+
+### Docker Desktop Requirements
+Ensure Docker Desktop is running before starting the system. On Windows, you may need to run PowerShell as Administrator for proper container management.
+
 ## Configuration Setup
 
 ### 1. Copy Environment Template

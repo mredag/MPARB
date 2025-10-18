@@ -238,6 +238,20 @@ const testDbConfig = {
 };
 ```
 
+### 2. Platform-Specific Test Files
+The system includes comprehensive test files for each platform:
+
+- **`tests/instagram_dm_test.js`** - Instagram DM workflow testing
+- **`tests/whatsapp_session_test.js`** - WhatsApp session and template testing  
+- **`tests/google_reviews_test.js`** - Google Business Profile review testing
+
+Each test file includes:
+- Mock webhook payload generation
+- API response mocking
+- Database interaction testing
+- Error scenario validation
+- Turkish language compliance testing
+
 ### 2. Mock External APIs
 Mock all external API calls:
 

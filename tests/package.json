@@ -22,6 +22,7 @@
   "author": "Multi-Platform Auto Response System",
   "license": "MIT",
   "dependencies": {
+    "async": "^3.2.6",
     "axios": "^1.6.0",
     "chai": "^4.3.10",
     "mocha": "^10.2.0"

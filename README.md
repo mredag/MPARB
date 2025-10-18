@@ -111,25 +111,54 @@ For a full explanation of every option, see [`docs/ENV_VARS.md`](docs/ENV_VARS.m
 
 All commands below are run from the project folder in your terminal.
 
+### For Windows Users (PowerShell/Command Prompt):
+
 1. **Launch the core services** (database + n8n):
 
    ```bash
-   make up
+   docker-compose up -d
    ```
 
    The first run may take several minutes while Docker downloads images. Wait until you see messages that the services are running.
 
-2. **Import the automation workflows**:
+2. **Import the automation workflows** using n8n CLI:
 
    ```bash
-   make import
+   docker exec -u node -it multi_platform_n8n n8n import:workflow --separate --input=/app/workflows
    ```
 
 3. **Activate the workflows** so they react to new messages:
 
    ```bash
+   docker exec -u node -it multi_platform_n8n n8n update:workflow --all --active=true
+   ```
+
+4. **Restart n8n** for activation to take effect:
+
+   ```bash
+   docker-compose restart n8n
+   ```
+
+### For Linux/macOS Users:
+
+1. **Launch the core services**:
+
+   ```bash
+   make up
+   ```
+
+2. **Import and activate workflows**:
+
+   ```bash
+   make import
    make activate
    ```
+
+### Common Issues:
+
+- **Port conflicts**: If PostgreSQL port 5432 is in use, the system will automatically use port 15432
+- **Windows permissions**: Run PowerShell as Administrator if you encounter permission errors
+- **Docker not running**: Ensure Docker Desktop is running before starting
 
 If anything fails, read the terminal output. Docker must be running, and your `.env` file must be correct.
 

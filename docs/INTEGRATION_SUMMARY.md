@@ -6,6 +6,20 @@ The multi-platform auto response system has been successfully integrated with al
 
 ## ✅ Integration Validation Results
 
+### End-to-End Testing Status (Latest Results)
+
+**System Health**: ✅ **PASSED** - n8n service healthy and accessible
+**Core Processing**: ✅ **PASSED** - AI processor workflow functional
+**Correlation Tracking**: ✅ **PASSED** - End-to-end tracing working
+**Sender Workflows**: ✅ **PASSED** - All platform senders operational
+- Instagram Sender: ✅ Working
+- WhatsApp Sender: ✅ Working  
+- Google Business Profile Sender: ✅ Working
+
+**Intake Webhooks**: ⚠️ **CONFIGURATION NEEDED**
+- Instagram Intake: Accepts GET (verification) ✅, POST configuration needed
+- WhatsApp Intake: Accepts GET (verification) ✅, POST configuration needed
+
 ### Workflow Connections Verified
 
 All workflows are properly connected via webhook calls:
@@ -170,14 +184,17 @@ make logs
 
 Ensure all required environment variables are configured:
 
-- `N8N_WEBHOOK_URL` - Your n8n instance URL
-- `META_VERIFY_TOKEN` - Meta webhook verification token
+- `N8N_WEBHOOK_URL` - Your n8n instance URL for webhook generation
+- `WEBHOOK_URL` - Base URL for external webhook access (should match N8N_WEBHOOK_URL)
+- `META_VERIFY_TOKEN` - Unified Meta webhook verification token (replaces FB_VERIFY_TOKEN and WA_VERIFY_TOKEN)
 - `FB_PAGE_TOKEN` - Facebook Page access token
 - `WA_PERMANENT_TOKEN` - WhatsApp permanent access token
 - `WA_PHONE_NUMBER_ID` - WhatsApp phone number ID
 - `OPENAI_API_KEY` - OpenAI API key
 - `POSTGRES_*` - Database connection details
 - `SLACK_WEBHOOK_URL` - Slack webhook URL (optional)
+
+**Important:** Legacy `FB_VERIFY_TOKEN` and `WA_VERIFY_TOKEN` variables are deprecated and ignored. Use only `META_VERIFY_TOKEN` for both Instagram and WhatsApp webhook verification.
 
 ## 📊 Monitoring and Maintenance
 

@@ -122,16 +122,29 @@ headers: {
 
 #### Error Handling
 ```javascript
-// OpenAI specific error handling
-if (openaiResponse.error) {
+// OpenAI specific error handling with content validation
+if (openaiResponse.error || !openaiResponse.choices || !openaiResponse.choices[0] || !openaiResponse.choices[0].message || !openaiResponse.choices[0].message.content) {
   // Log error and use fallback response
+  console.error('OpenAI API Error or Missing Content:', {
+    error: openaiResponse.error?.message || 'Missing response content',
+    correlation_id: $json.correlation_id,
+    timestamp: new Date().toISOString()
+  });
+  
   const fallbackResponse = {
     language: 'tr',
     sentiment: 'Neutral',
     intent: 'Other',
     reply_text: 'Teşekkür ederiz, mesajınızı aldık. En kısa sürede size dönüş yapacağız.',
-    fallback: true
+    fallback: true,
+    correlation_id: $json.correlation_id
   };
+}
+
+// REQUIRED: Validate OpenAI response structure before processing
+const messageContent = openaiResponse.choices?.[0]?.message?.content;
+if (!messageContent) {
+  throw new Error('OpenAI response missing message content');
 }
 ```
 
