@@ -4,6 +4,7 @@
     {
       "parameters": {
         "path": "instagram-intake",
+        "httpMethod": "GET,POST",
         "options": {}
       },
       "id": "f4b1c5e0-8b2a-4c3d-9e5f-1a2b3c4d5e6f",

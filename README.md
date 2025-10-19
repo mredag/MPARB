@@ -231,12 +231,16 @@ Ready to go beyond the basics? These documents dive deeper:
 * [`docs/AGENTS.md`](docs/AGENTS.md) – Complete developer/agent handbook.
 * [`docs/INTEGRATION_SUMMARY.md`](docs/INTEGRATION_SUMMARY.md) – Detailed description of every workflow.
 * [`docs/PRD.md`](docs/PRD.md) – Product requirements and use cases.
+* [`docs/STATUS_SUMMARY.md`](docs/STATUS_SUMMARY.md) – Quick system status overview.
+* [`docs/CURRENT_ISSUES.md`](docs/CURRENT_ISSUES.md) – Current system status and known issues.
+* [`docs/PRODUCTION_DEPLOYMENT.md`](docs/PRODUCTION_DEPLOYMENT.md) – Complete production deployment guide.
 
 Developers can run automated checks with:
 
 ```bash
 make test
 node scripts/validate_integration.js
+node scripts/test_end_to_end.js
 ```
 
 ---

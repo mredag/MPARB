@@ -115,11 +115,22 @@ const responseTimeMs = Date.now() - startTime;
 
 ### Intake Workflows
 - Must validate webhook tokens using `META_VERIFY_TOKEN` for both Instagram and WhatsApp
-- Must allow POST webhooks without verify token validation (for message processing)
+- Must configure webhook nodes with `httpMethod: "GET,POST"` to accept both verification and message processing
 - Must normalize platform-specific data
 - Must generate correlation_id
 - Must check policy compliance (24-hour rule for Instagram/WhatsApp)
 - Must call processor workflow with standardized payload
+
+**Webhook Configuration:**
+```json
+{
+  "parameters": {
+    "path": "instagram-intake",
+    "httpMethod": "GET,POST",  // REQUIRED: Accept both GET and POST
+    "options": {}
+  }
+}
+```
 
 **Token Validation Logic:**
 ```javascript
