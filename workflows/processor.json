@@ -22,7 +22,7 @@
       "parameters": {
         "resource": "chat",
         "operation": "message",
-        "model": "gpt-3.5-turbo",
+        "model": "gpt-4o-mini",
         "messages": {
           "messageValues": [
             {
@@ -350,6 +350,19 @@
     },
     {
       "parameters": {
+        "jsCode": "// Prepare webhook response with AI analysis results\n// This ensures the webhook always returns structured data regardless of sender outcomes\n\nconst aiResponse = $input.first().json;\n\n// Return the AI analysis results for the webhook response\nreturn {\n  language: aiResponse.language,\n  sentiment: aiResponse.sentiment,\n  intent: aiResponse.intent,\n  reply_text: aiResponse.reply_text,\n  correlation_id: aiResponse.correlation_id,\n  processed_at: aiResponse.processed_at,\n  fallback: aiResponse.fallback || false,\n  status: 'processed'\n};"
+      },
+      "id": "prepare-webhook-response",
+      "name": "Prepare Webhook Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ]
+    },
+    {
+      "parameters": {
         "respondWith": "json",
         "responseBody": "={{ $json }}"
       },
@@ -518,6 +531,11 @@
             "node": "Check for Fallback",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Prepare Webhook Response",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -567,38 +585,25 @@
             "index": 0
           }
         ],
-        [
-          {
-            "node": "Respond to Webhook",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Call Instagram Sender": {
       "main": [
-        [
-          {
-            "node": "Respond to Webhook",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Call WhatsApp Sender": {
       "main": [
-        [
-          {
-            "node": "Respond to Webhook",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Call Google Business Profile Sender": {
+      "main": [
+        []
+      ]
+    },
+    "Prepare Webhook Response": {
       "main": [
         [
           {

@@ -6,6 +6,13 @@ This document describes all environment variables required for the Multi-Platfor
 
 ### Database Configuration
 
+#### `POSTGRES_HOST`
+
+- **Description**: PostgreSQL server hostname or IP address
+- **Required**: Yes
+- **Default**: `postgres` (for Docker Compose)
+- **Example**: `POSTGRES_HOST=postgres`
+
 #### `POSTGRES_DB`
 
 - **Description**: PostgreSQL database name
@@ -179,6 +186,7 @@ These variables are used for webhook validation:
 
 These variables contain public or non-sensitive information:
 
+- `POSTGRES_HOST`
 - `POSTGRES_DB`
 - `POSTGRES_USER`
 - `WA_PHONE_NUMBER_ID`
@@ -214,6 +222,7 @@ Edit the `.env` file and set all required variables for your deployment:
 
 ```bash
 # Database
+POSTGRES_HOST=postgres
 POSTGRES_DB=autoresponse
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=your_secure_password_here

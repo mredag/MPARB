@@ -212,6 +212,50 @@
     },
     {
       "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "name"
+        },
+        "table": {
+          "__rl": true,
+          "value": "messages_audit",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "correlation_id": "={{ $json.correlation_id }}",
+            "platform": "whatsapp",
+            "action": "message_sent",
+            "outcome": "={{ $json.outcome }}",
+            "response_time_ms": "={{ $json.response_time_ms }}",
+            "error_message": "={{ $json.error_message }}",
+            "api_response": "={{ JSON.stringify($json.api_response) }}",
+            "phone": "={{ $json.phone }}",
+            "session_mode": "={{ $json.session_mode }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "audit-log-whatsapp",
+      "name": "Log Audit Trail",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1560,
+        400
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-main",
+          "name": "PostgreSQL Main"
+        }
+      }
+    },
+    {
+      "parameters": {
         "conditions": {
           "options": {
             "caseSensitive": true,
@@ -437,6 +481,11 @@
         [
           {
             "node": "Update Message Record",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Audit Trail",
             "type": "main",
             "index": 0
           }

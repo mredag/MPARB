@@ -42,6 +42,38 @@ CREATE TABLE IF NOT EXISTS errors (
     node VARCHAR(100),
     message TEXT,
     payload JSONB,
+    correlation_id UUID,                -- Optional correlation ID for error tracing
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Messages audit table for complete correlation tracking
+CREATE TABLE IF NOT EXISTS messages_audit (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    correlation_id UUID NOT NULL,
+    platform VARCHAR(20) NOT NULL CHECK (platform IN ('instagram', 'whatsapp')),
+    action VARCHAR(50) NOT NULL,        -- 'message_sent', 'message_failed', etc.
+    outcome VARCHAR(50) NOT NULL,       -- 'sent', 'failed', 'escalated'
+    response_time_ms INTEGER,
+    error_message TEXT,
+    api_response JSONB,
+    sender_id VARCHAR(255),
+    phone VARCHAR(20),
+    session_mode VARCHAR(20),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Reviews audit table for Google Business Profile correlation tracking
+CREATE TABLE IF NOT EXISTS reviews_audit (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    correlation_id UUID NOT NULL,
+    platform VARCHAR(20) NOT NULL DEFAULT 'google_reviews',
+    action VARCHAR(50) NOT NULL,        -- 'review_reply_sent', 'review_escalated', etc.
+    outcome VARCHAR(50) NOT NULL,       -- 'sent', 'failed', 'escalated', 'logged_only'
+    response_time_ms INTEGER,
+    error_message TEXT,
+    api_response JSONB,
+    review_id VARCHAR(255),
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -56,6 +88,17 @@ CREATE INDEX IF NOT EXISTS idx_reviews_correlation_id ON reviews(correlation_id)
 
 -- Indexes for errors table
 CREATE INDEX IF NOT EXISTS idx_errors_created_at ON errors(created_at);
+
+-- Indexes for messages_audit table
+CREATE INDEX IF NOT EXISTS idx_messages_audit_correlation_id ON messages_audit(correlation_id);
+CREATE INDEX IF NOT EXISTS idx_messages_audit_created_at ON messages_audit(created_at);
+CREATE INDEX IF NOT EXISTS idx_messages_audit_platform ON messages_audit(platform);
+CREATE INDEX IF NOT EXISTS idx_messages_audit_outcome ON messages_audit(outcome);
+
+-- Indexes for reviews_audit table
+CREATE INDEX IF NOT EXISTS idx_reviews_audit_correlation_id ON reviews_audit(correlation_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_audit_created_at ON reviews_audit(created_at);
+CREATE INDEX IF NOT EXISTS idx_reviews_audit_outcome ON reviews_audit(outcome);
 
 -- Insert some sample data for testing (optional)
 -- This data will help verify the schema is working correctly

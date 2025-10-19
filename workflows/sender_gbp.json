@@ -221,6 +221,50 @@
     },
     {
       "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "name"
+        },
+        "table": {
+          "__rl": true,
+          "value": "reviews_audit",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "correlation_id": "={{ $json.correlation_id }}",
+            "platform": "google_reviews",
+            "action": "review_reply_sent",
+            "outcome": "={{ $json.outcome }}",
+            "response_time_ms": "={{ $json.response_time_ms }}",
+            "error_message": "={{ $json.error_message }}",
+            "api_response": "={{ JSON.stringify($json.api_response) }}",
+            "review_id": "={{ $json.review_id }}",
+            "rating": "={{ $json.rating }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "audit-log-gbp",
+      "name": "Log Audit Trail",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1340,
+        400
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-main",
+          "name": "PostgreSQL Main"
+        }
+      }
+    },
+    {
+      "parameters": {
         "conditions": {
           "options": {
             "caseSensitive": true,
@@ -476,6 +520,11 @@
             "node": "Update Review Record",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Log Audit Trail",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -485,6 +534,11 @@
         [
           {
             "node": "Update Review Record",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Audit Trail",
             "type": "main",
             "index": 0
           }

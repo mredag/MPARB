@@ -32,6 +32,7 @@
             "node": "={{ $('Error Trigger').item.json.node.name }}",
             "message": "={{ $('Error Trigger').item.json.error.message }}",
             "payload": "={{ JSON.stringify($('Error Trigger').item.json) }}",
+            "correlation_id": "={{ $('Error Trigger').item.json.inputData?.[0]?.main?.[0]?.[0]?.json?.correlation_id || $('Error Trigger').item.json.execution?.id || null }}",
             "created_at": "={{ new Date().toISOString() }}"
           },
           "matchingColumns": [],

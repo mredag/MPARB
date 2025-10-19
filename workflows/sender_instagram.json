@@ -33,7 +33,7 @@
     },
     {
       "parameters": {
-        "url": "https://graph.facebook.com/v17.0/me/messages",
+        "url": "https://graph.facebook.com/v17.0/{{ $env.INSTAGRAM_BUSINESS_ACCOUNT_ID }}/messages",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -121,6 +121,49 @@
       "position": [
         1120,
         300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-main",
+          "name": "PostgreSQL Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "name"
+        },
+        "table": {
+          "__rl": true,
+          "value": "messages_audit",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "correlation_id": "={{ $json.correlation_id }}",
+            "platform": "instagram",
+            "action": "message_sent",
+            "outcome": "={{ $json.outcome }}",
+            "response_time_ms": "={{ $json.response_time_ms }}",
+            "error_message": "={{ $json.error_message }}",
+            "api_response": "={{ JSON.stringify($json.api_response) }}",
+            "sender_id": "={{ $json.sender_id }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "audit-log-instagram",
+      "name": "Log Audit Trail",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1120,
+        400
       ],
       "credentials": {
         "postgres": {
@@ -316,6 +359,11 @@
         [
           {
             "node": "Update Message Record",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Audit Trail",
             "type": "main",
             "index": 0
           }
